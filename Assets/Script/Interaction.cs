@@ -30,6 +30,7 @@ public struct Step{
 //--
 public class Interaction : MonoBehaviour {
 
+    public GameObject tcp; 
 	public GameObject player1;
 	public GameObject player2;
 	public Text winnerText;
@@ -65,7 +66,7 @@ public class Interaction : MonoBehaviour {
 	void Update () {
 
 		if( Input.GetMouseButtonDown(0)){
-
+            
 			currentPlayer = currentPlayer != player1 ? player1 : player2;
 			Interact();
 		}
