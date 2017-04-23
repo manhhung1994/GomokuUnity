@@ -17,7 +17,8 @@ public class UnitySynchronizeInvokeExample : MonoBehaviour
         {
             var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
             {
-                this.transform.localScale = Vector3.one * Random.Range(1.0f, 10.0f);
+                //this.transform.localScale = Vector3.one * Random.Range(1.0f, 10.0f);
+                Instantiate(player);
                 return this.gameObject.name;
             }), null);
             Debug.Log("Waited for the end of synchronizeInvoke and it synchronously returned me: " + (retObj as string));

@@ -41,10 +41,11 @@ public class TCPClient: MonoBehaviour
     public IAsyncResult abc;
     private void Start()
     {
-        
+        synchronizeInvoke = new UnitySynchronizeInvoke();
     }
-    public virtual void Update()
+    void Update()
     {
+        synchronizeInvoke.ProcessQueue();
         if (isConnected == true)
         {
             panelChooseRoom.SetActive(true);
@@ -134,8 +135,13 @@ public class TCPClient: MonoBehaviour
                 break;
             case Events.ANY:
                 //Log(json, false);
-                
-                Instantiate(player1);
+                var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
+                {
+                    //this.transform.localScale = Vector3.one * Random.Range(1.0f, 10.0f);
+                    Instantiate(player1);
+                    return this.gameObject.name;
+                }), null);
+                Debug.Log("anyyyyyy");
                 break;
             default: break;
         }
