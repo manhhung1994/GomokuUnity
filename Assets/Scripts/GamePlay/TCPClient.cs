@@ -33,8 +33,12 @@ public class TCPClient: MonoBehaviour
     public GameObject panelChooseRoom;
     public GameObject caroBoard;
     public GameObject panelCaro;
+    public GameObject player1;
     public bool isConnected = false;
     public bool isJoinRoom = false;
+
+    UnitySynchronizeInvoke synchronizeInvoke;
+    public IAsyncResult abc;
     private void Start()
     {
         
@@ -74,8 +78,8 @@ public class TCPClient: MonoBehaviour
             Debug.Log(ex.Message);
         }
 
-        _clientSocket.BeginReceive(_recieveBuffer, 0, _recieveBuffer.Length, SocketFlags.None, new AsyncCallback(ReceiveCallback), null);
-
+         abc =_clientSocket.BeginReceive(_recieveBuffer, 0, _recieveBuffer.Length, SocketFlags.None, new AsyncCallback(ReceiveCallback), null);
+        
     }
     public void onClick_Test()
     {
@@ -107,7 +111,7 @@ public class TCPClient: MonoBehaviour
         //Process data here the way you want , all your bytes will be stored in recData
 
         //Start receiving again
-        _clientSocket.BeginReceive(_recieveBuffer, 0, _recieveBuffer.Length, SocketFlags.None, new AsyncCallback(ReceiveCallback), null);
+        IAsyncResult x = _clientSocket.BeginReceive(_recieveBuffer, 0, _recieveBuffer.Length, SocketFlags.None, new AsyncCallback(ReceiveCallback), null);
 
 
         //Log(Encoding.UTF8.GetString(recData), false);
@@ -129,7 +133,9 @@ public class TCPClient: MonoBehaviour
                 onJoinrRoomSuccess();
                 break;
             case Events.ANY:
-                Log(json, false);
+                //Log(json, false);
+                
+                Instantiate(player1);
                 break;
             default: break;
         }
