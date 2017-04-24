@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class EventType  {
-    public const byte PROTCOL_VERSION = 0x01;
+
     /**
 	 * Events should <b>NEVER</b> have this type. But event handlers can choose
 	 * to have this type to signify that they will handle any type of incoming
@@ -12,7 +12,8 @@ public class EventType  {
     public const  byte ANY = 0x00;
 
     // Lifecycle events.
-    public  const byte CONNECT = 0x02;
+    public const  byte CONNECT = 0x01;
+    public const  byte CONNECT_SUCCESS = 0x02;
     /**
 	 * Similar to LOG_IN but parameters are different. This event is sent from
 	 * client to server.

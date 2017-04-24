@@ -13,6 +13,11 @@ using System.Collections.Generic;
 
 public class TCPClient: MonoBehaviour
 {
+    [SerializeField]
+    String HostAddress;
+    [SerializeField]
+    int PORT;
+
     [Header("Game data")]
     public GameObject player1;
     public GameObject player2;
@@ -20,19 +25,26 @@ public class TCPClient: MonoBehaviour
     public int winCondition;
 
     public GameObject currentPlayer;
-
     GameController gameController;
     int[][] flag;
     int maxRow;
     int maxCol;
 
-    [Header("Client")]
+    [Header("GUI")]
 
     public Text mess;
-    public Text inputString;
-    public Text inputHost;
-    public Text inputPort;
+    public Text inputId;
+    public Text inputPass;
     public Text inputTest;
+
+
+    public GameObject panelLogin;
+    public GameObject panelChooseRoom;
+    public GameObject caroBoard;
+    public GameObject panelCaro;
+    public GameObject panelConnect;
+    public GameObject panelReconnect;
+    [Header("CLIENT")]
 
     static ManualResetEvent _clientDone = new ManualResetEvent(false);
 
@@ -44,11 +56,6 @@ public class TCPClient: MonoBehaviour
     private EventGame ev;
     private byte[] reply;
 
-    public GameObject panelLogin;
-    public GameObject panelChooseRoom;
-    public GameObject caroBoard;
-    public GameObject panelCaro;
-
     private bool isConnected = false;
     private bool isJoinRoom = false;
     private bool isRoot;
@@ -57,6 +64,8 @@ public class TCPClient: MonoBehaviour
     
     private void Start()
     {
+        SetupServer(HostAddress, PORT);
+
         {
             gameController = GetComponent<GameController>();
 
@@ -82,24 +91,38 @@ public class TCPClient: MonoBehaviour
         }
         synchronizeInvoke.ProcessQueue();       
     }
-    public void Connect()
+    private void OnApplicationQuit()
     {
-        Debug.Log(inputHost.text + Int32.Parse(inputPort.text));
-        SetupServer(inputHost.text, Int32.Parse(inputPort.text));
+        SendJson(newEventGame(EventType.LOG_OUT, ""));
+        _clientSocket.Close();
     }
+
+
     private void SetupServer(string hostAddr, int port)
     {
         try
         {
+            panelReconnect.SetActive(false);
             _clientSocket.Connect(new IPEndPoint(IPAddress.Parse(hostAddr), port));
+            
         }
         catch (SocketException ex)
         {
             Debug.Log(ex.Message);
+            Reconnect();
         }
 
          abc =_clientSocket.BeginReceive(_recieveBuffer, 0, _recieveBuffer.Length, SocketFlags.None, new AsyncCallback(ReceiveCallback), null);
         
+    }
+    private void Reconnect()
+    {
+        Debug.Log("CONNECT_FAILED");
+        panelReconnect.SetActive(true);
+    }
+    public void onClick_Reconnect()
+    {
+        SetupServer("127.0.0.1", 9696);
     }
     public void onClick_Test()
     {
@@ -111,10 +134,14 @@ public class TCPClient: MonoBehaviour
     }
     public void onClick_Login()
     {
-        Connect();
-
-        SendJson(newEventGame(EventType.CONNECT, "tao la hung"));
-
+        CheckLogin(inputId.text, inputPass.text);
+        
+        SendJson(newEventGame(EventType.LOG_IN, inputId.text + "-" + inputPass.text));
+        
+    }
+    private void CheckLogin(string id, string pass)
+    {
+        Debug.Log(id + pass) ;
     }
     private void ReceiveCallback(IAsyncResult AR)
     {
@@ -146,6 +173,9 @@ public class TCPClient: MonoBehaviour
 
         switch(eve.eventType)
         {
+            case EventType.CONNECT_SUCCESS:
+                onConnectSuccess(eve);
+                break;
             case EventType.LOG_IN_SUCCESS:
                 onLoginSuccess(eve);
                 break;
@@ -164,8 +194,22 @@ public class TCPClient: MonoBehaviour
         }
        
     }
-    void onLoginSuccess(EventGame eve)
+    private void onConnectSuccess(EventGame eve)
     {
+        Debug.Log("onConnectSuccess");
+        var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
+        {
+            panelLogin.SetActive(true);
+            panelConnect.SetActive(false);
+            isConnected = true;
+            return this.gameObject.name;
+
+        }), null);
+    }
+    private void onLoginSuccess(EventGame eve)
+    {
+
+        Debug.Log("onLoginSuccess");
         var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
         {
             panelLogin.SetActive(false);
