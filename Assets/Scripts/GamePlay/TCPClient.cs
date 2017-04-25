@@ -36,7 +36,8 @@ public class TCPClient: MonoBehaviour
     public Text inputId;
     public Text inputPass;
     public Text inputTest;
-
+    public Text inputHost;
+    public Text inputPort;
 
     public GameObject panelLogin;
     public GameObject panelChooseRoom;
@@ -44,6 +45,7 @@ public class TCPClient: MonoBehaviour
     public GameObject panelCaro;
     public GameObject panelConnect;
     public GameObject panelReconnect;
+    public GameObject txtConnecting;
     [Header("CLIENT")]
 
     static ManualResetEvent _clientDone = new ManualResetEvent(false);
@@ -59,6 +61,7 @@ public class TCPClient: MonoBehaviour
     private bool isConnected = false;
     private bool isJoinRoom = false;
     private bool isRoot;
+    private bool isMyTurn;
     UnitySynchronizeInvoke synchronizeInvoke;
     public IAsyncResult abc;
     
@@ -83,10 +86,7 @@ public class TCPClient: MonoBehaviour
     void Update()
     {
         if (Input.GetMouseButtonDown(0) && isJoinRoom == true)
-        {
-            Debug.Log("get mouse");
-            //SendJson(newEventGame(EventType.ANY, ""));
-            //currentPlayer = currentPlayer != player1 ? player1 : player2;
+        {           
             Interact();
         }
         synchronizeInvoke.ProcessQueue();       
@@ -103,6 +103,7 @@ public class TCPClient: MonoBehaviour
         try
         {
             panelReconnect.SetActive(false);
+            txtConnecting.SetActive(true);
             _clientSocket.Connect(new IPEndPoint(IPAddress.Parse(hostAddr), port));
             
         }
@@ -119,10 +120,11 @@ public class TCPClient: MonoBehaviour
     {
         Debug.Log("CONNECT_FAILED");
         panelReconnect.SetActive(true);
+        txtConnecting.SetActive(false);
     }
     public void onClick_Reconnect()
     {
-        SetupServer("127.0.0.1", 9696);
+        SetupServer(inputHost.text, Int32.Parse(inputPort.text));
     }
     public void onClick_Test()
     {
@@ -182,13 +184,9 @@ public class TCPClient: MonoBehaviour
             case EventType.GAME_ROOM_JOIN_SUCCESS:
                 onJoinRoomSuccess(eve);
                 break;
-            case EventType.ANY:
-                //Log(json, false);
-                var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
-                {
-                    return this.gameObject.name;
-                }), null);
-                Debug.Log("anyyyyyy");
+            case EventType.POSSITION:
+                onPossition(eve);
+
                 break;
             default: break;
         }
@@ -219,9 +217,9 @@ public class TCPClient: MonoBehaviour
 
         }), null);
     }
-    void onJoinRoomSuccess(EventGame eve)
+    private void onJoinRoomSuccess(EventGame eve)
     {
-        
+        Debug.Log("onJoinRoomSuccess");
         var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
         {
             panelLogin.SetActive(false);
@@ -231,12 +229,38 @@ public class TCPClient: MonoBehaviour
             isJoinRoom = true;
             int flag = Int32.Parse(eve.data);
             if (flag == 1)
+            {
                 currentPlayer = player1;
-            else currentPlayer = player2;
+                isMyTurn = true;
+            }
+            else {
+                currentPlayer = player2;
+                isMyTurn = false;
+            }
             return this.gameObject.name;
 
         }), null);
         
+    }
+    private void onPossition(EventGame eve)
+    {
+        string[] pos = eve.data.Split('-');
+        int posX = Int32.Parse(pos[1]);
+        int posY = Int32.Parse(pos[0]);
+        Debug.Log(posX + "||" + posY);
+        isMyTurn = true;
+        var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
+        {
+
+            if (PlayerCanMark(posX, posY))
+            {
+                if (currentPlayer == player1)
+                    Instantiate(player2, new Vector3(posX, posY, 0), Quaternion.identity);
+                else
+                    Instantiate(player1, new Vector3(posX, posY, 0), Quaternion.identity);
+            }
+            return this.gameObject.name;
+        }), null);
     }
     public void SendJson(EventGame even)
     {
@@ -321,16 +345,17 @@ public class TCPClient: MonoBehaviour
 
         Vector2 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
-        SendJson(newEventGame(EventType.ANY, ""));
+        
         int row = Mathf.RoundToInt(mousePosition.y);
         int col = Mathf.RoundToInt(mousePosition.x);
 
-        if (PlayerCanMark(row, col))
+        if (PlayerCanMark(row, col) && isMyTurn == true)
         {
             //Mark
             Vector3 position = new Vector3(Mathf.Round(mousePosition.x), Mathf.Round(mousePosition.y), 0);
             Instantiate(currentPlayer, position, Quaternion.identity);
-
+            isMyTurn = false;
+            SendJson(newEventGame(EventType.POSSITION, row +"-" + col));
             // set flag 
             /*
             int markValue = currentPlayer == player1 ? 1 : 2;

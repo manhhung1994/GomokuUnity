@@ -59,7 +59,7 @@ public class EventType  {
 	 * This event is used to send data from the current machine to remote
 	 * machines using TCP or UDP transports. It is an out-going event.
 	 */
-    public const byte NETWORK_MESSAGE = 0x1d;
+    public const byte POSSITION = 0x1d;
 
 
     public const byte CHANGE_ATTRIBUTE = 0x20;
