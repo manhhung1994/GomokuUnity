@@ -13,6 +13,15 @@ using System.Collections.Generic;
 
 public class TCPClient: MonoBehaviour
 {
+    public enum state
+    {
+        MYTURN,
+        WAITING,
+
+    };
+
+
+
     [SerializeField]
     String HostAddress;
     [SerializeField]
@@ -30,15 +39,15 @@ public class TCPClient: MonoBehaviour
     int maxRow;
     int maxCol;
 
-    [Header("GUI")]
-
+    [Header("------GUI-------")]
+    [Header("TEXT")]
     public Text mess;
     public Text inputId;
     public Text inputPass;
     public Text inputTest;
     public Text inputHost;
     public Text inputPort;
-
+    [Header("GAME_OBJECT")]
     public GameObject panelLogin;
     public GameObject panelChooseRoom;
     public GameObject caroBoard;
@@ -60,11 +69,13 @@ public class TCPClient: MonoBehaviour
 
     private bool isConnected = false;
     private bool isJoinRoom = false;
-    private bool isRoot;
-    private bool isMyTurn;
+    public bool isRoot;
+    public bool isMyTurn;
+    public int room;
     UnitySynchronizeInvoke synchronizeInvoke;
     public IAsyncResult abc;
     
+
     private void Start()
     {
         SetupServer(HostAddress, PORT);
@@ -124,7 +135,10 @@ public class TCPClient: MonoBehaviour
     }
     public void onClick_Reconnect()
     {
-        SetupServer(inputHost.text, Int32.Parse(inputPort.text));
+        if (inputHost.text == "" || Int32.Parse(inputPort.text) == null)
+            SetupServer("127.0.0.1", 9696);
+        else 
+            SetupServer(inputHost.text, Int32.Parse(inputPort.text));
     }
     public void onClick_Test()
     {
@@ -227,15 +241,21 @@ public class TCPClient: MonoBehaviour
             panelCaro.SetActive(true);
             caroBoard.SetActive(true);
             isJoinRoom = true;
-            int flag = Int32.Parse(eve.data);
+
+
+            string[] tokens = eve.data.Split(new[] { "-" }, StringSplitOptions.None);
+            room = Int32.Parse(tokens[0]);
+            int flag = Int32.Parse(tokens[1]);
             if (flag == 1)
             {
                 currentPlayer = player1;
                 isMyTurn = true;
+                isRoot = true;
             }
             else {
                 currentPlayer = player2;
                 isMyTurn = false;
+                isRoot = false;
             }
             return this.gameObject.name;
 
@@ -355,7 +375,7 @@ public class TCPClient: MonoBehaviour
             Vector3 position = new Vector3(Mathf.Round(mousePosition.x), Mathf.Round(mousePosition.y), 0);
             Instantiate(currentPlayer, position, Quaternion.identity);
             isMyTurn = false;
-            SendJson(newEventGame(EventType.POSSITION, row +"-" + col));
+            SendJson(newEventGame(EventType.POSSITION, row + "-" + col));
             // set flag 
             /*
             int markValue = currentPlayer == player1 ? 1 : 2;
