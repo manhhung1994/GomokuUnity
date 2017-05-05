@@ -163,7 +163,7 @@ public class TCPClient: MonoBehaviour
     public void onClick_Reconnect()
     {
         if (inputHost.text == "" || Int32.Parse(inputPort.text) == null)
-            SetupServer(SaveHostAddress.hostAdd.Host, SaveHostAddress.hostAdd.PORT);
+            SetupServer("127.0.0.1", 9696);
         else 
             SetupServer(inputHost.text, Int32.Parse(inputPort.text));
     }
@@ -193,13 +193,13 @@ public class TCPClient: MonoBehaviour
                 SendJson(newEventGame(EventType.DISCONNECT, ""));
             }
             if( 
-                (GameState == GameStatus.READY || 
-                GameState== GameStatus.ENEMY_TURN || 
+                (GameState == GameStatus.READY ||
+                GameState == GameStatus.ENEMY_TURN || 
                 GameState == GameStatus.MYTURN))
             {
                 SendJson(newEventGame(EventType.GAME_ROOM_LEAVE, "lose"));
             }
-            if(GameState == GameStatus.WAITING_PLAYER)
+            if(GameState == GameStatus.WAITING_PLAYER || GameState == GameStatus.PLAYING )
             {
                 SendJson(newEventGame(EventType.GAME_ROOM_LEAVE, ""));
             }
@@ -228,14 +228,13 @@ public class TCPClient: MonoBehaviour
     }
     public void on_ClickReady()
     {
-        /*
-        if(isRoot)
+        if (GameState == GameStatus.PLAYING)
+        {
             SendJson(newEventGame(EventType.READY, ""));
-        else
-            SendJson(newEventGame(EventType.READY, "player2"));
-          */  
-        panelReady.transform.SetAsFirstSibling();
-        panelReady.SetActive(false);
+            panelReady.transform.SetAsFirstSibling();
+            panelReady.SetActive(false);
+        }  
+        
     }
     private void ReceiveCallback(IAsyncResult AR)
     {
@@ -279,11 +278,14 @@ public class TCPClient: MonoBehaviour
             case EventType.READY_SUCCESS:
                 onReadySuccess(eve);
                 break;
-            case EventType.ENEMYDATA:
-                onEnemydata(eve);
+            case EventType.ENEMY_JOIN_ROOM:
+                onEnemyJoinRoom(eve);
                 break;
             case EventType.ENEMY_LEAVE:
                 onEnemyLeave(eve);
+                break;
+            case EventType.ENEMYDATA:
+                onEnemyData(eve);
                 break;
             case EventType.ROOM_LEAVE_SUCCESS:
                 onRoomLeaveSuccess(eve);
@@ -344,7 +346,7 @@ public class TCPClient: MonoBehaviour
             string[] tokens = eve.data.Split(new[] { "-" }, StringSplitOptions.None);
 
             int flag = Int32.Parse(tokens[1]);
-
+            
             if (flag == 1)
             {
                 playerLeft.transform.GetChild(0).GetComponent<Text>().text = tokens[0];
@@ -353,6 +355,15 @@ public class TCPClient: MonoBehaviour
                 playerRight.SetActive(false);
                 currentPlayer = player1;
                 isRoot = true;
+                if (tokens[2].Equals("exitedEnemy"))
+                {
+                    playerRight.SetActive(true);
+                    GameState = GameStatus.PLAYING;
+                }
+                else
+                {
+                    Debug.Log("chua co enemy");
+                }
             }
             else {
 
@@ -362,36 +373,23 @@ public class TCPClient: MonoBehaviour
                 playerRight.SetActive(true);
                 currentPlayer = player2;
                 isRoot = false;
+                if (tokens[2].Equals("exitedEnemy"))
+                {
+                    playerLeft.SetActive(true);
+                    GameState = GameStatus.PLAYING;
+                }
+                else
+                {
+                    Debug.Log("chua co enemy");
+                }
             }
+           
             return this.gameObject.name;
 
         }), null);
         
     }
-    private void onEnemydata(EventGame eve)
-    {
-        
-        Debug.Log("onEnemydata");
-        string[] tokens = eve.data.Split('-');
-        Debug.Log(tokens[0] + "|" + tokens[1]);
-        var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
-        {
-            if(isRoot)
-            {
-                playerRight.SetActive(true);
-                playerRight.transform.GetChild(0).gameObject.GetComponent<Text>().text = tokens[0];
-                playerRight.transform.GetChild(1).gameObject.GetComponent<Text>().text = tokens[1];
-            }
-            else
-            {
-                playerLeft.SetActive(true);
-                playerLeft.transform.GetChild(0).gameObject.GetComponent<Text>().text = tokens[0];
-                playerLeft.transform.GetChild(1).gameObject.GetComponent<Text>().text = tokens[1];
-            }
-            return this.gameObject.name;
-        }), null);
-
-    }
+   
     private void onRoomLeaveSuccess(EventGame eve)
     {
         Debug.Log("onRoomLeaveSuccess");
@@ -407,15 +405,64 @@ public class TCPClient: MonoBehaviour
             return this.gameObject.name;
         }), null);
     }
+    private void onEnemyJoinRoom(EventGame eve)
+    {
+        
+        Debug.Log("onEnemyJoinRoom");
+        
+        var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
+        {
+            GameState = GameStatus.PLAYING;
+            if(isRoot)
+            {
+                playerRight.SetActive(true);              
+            }
+            else
+            {
+                playerLeft.SetActive(true);               
+            }
+            return this.gameObject.name;
+        }), null);
+        
+    }
+    private void onEnemyData(EventGame eve)
+    {
+        Debug.Log("onEnemyData");
+        if(eve.data.Equals("exitedEnemy"))
+        {
+            var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
+            {
+                if (isRoot)
+                {
+                    playerRight.SetActive(true);
+                }
+                else
+                {
+                    playerLeft.SetActive(true);
+                }
+                return this.gameObject.name;
+            }), null);
+        }
+    }
     private void onEnemyLeave(EventGame eve)
     {
-        Debug.Log("onEnemyLeave");
-        if (isRoot)
+
+        Debug.Log("onEnemyLeave" + eve.data);
+        var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
         {
-            playerRight.SetActive(false);
-        }
-        else
-            playerLeft.SetActive(false);
+            GameState = GameStatus.WAITING_PLAYER;
+            if (isRoot)
+                playerRight.SetActive(false);           
+            else
+                playerLeft.SetActive(false);
+            if(eve.data.Equals("win"))
+            {
+                panelWin.SetActive(true);
+                caroBoard.SetActive(false);
+            }
+            return this.gameObject.name;
+        }), null);
+        
     }
     private void onReadySuccess(EventGame eve)
     {
