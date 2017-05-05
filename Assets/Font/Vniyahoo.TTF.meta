@@ -1,0 +1,22 @@
+fileFormatVersion: 2
+guid: d60422a70ea83cd48a712b5f657da978
+timeCreated: 1493801378
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: VNI-Yahoo
+  fontNames:
+  - VNI-Yahoo
+  fallbackFontReferences:
+  - {fileID: 12800000, guid: 95bf4e7ba2f09a44284dc5279dcf43d0, type: 3}
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

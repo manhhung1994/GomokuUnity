@@ -1,0 +1,22 @@
+fileFormatVersion: 2
+guid: f56ff3595bb88d24e84e52a5cf5667d2
+timeCreated: 1493801379
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: VNI-Whimsy
+  fontNames:
+  - VNI-Whimsy
+  fallbackFontReferences:
+  - {fileID: 12800000, guid: 6631bb4ef3d9cb94c908487fa2e15e4a, type: 3}
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

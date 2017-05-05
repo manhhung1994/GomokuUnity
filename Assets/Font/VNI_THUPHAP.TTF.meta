@@ -1,0 +1,22 @@
+fileFormatVersion: 2
+guid: f998cfa88714281458138de57414f6f1
+timeCreated: 1493801379
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: VNI-Trung Kien
+  fontNames:
+  - VNI-Trung Kien
+  fallbackFontReferences:
+  - {fileID: 12800000, guid: bc6f0ed790c78c74cb136c938dd24e38, type: 3}
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

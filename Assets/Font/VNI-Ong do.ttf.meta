@@ -1,0 +1,24 @@
+fileFormatVersion: 2
+guid: bbd23e0eecd69a74ba051cdea06a92b7
+timeCreated: 1493801378
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: .TMC-Ong Do
+  fontNames:
+  - .TMC-Ong Do
+  fallbackFontReferences:
+  - {fileID: 12800000, guid: 2addce9266b16f6439d451ef91e0dfc9, type: 3}
+  - {fileID: 12800000, guid: 82295eb3400a8d04dabcc08d21f7d403, type: 3}
+  - {fileID: 12800000, guid: 0776cd169a343f54b9e9e99b2c9223f2, type: 3}
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

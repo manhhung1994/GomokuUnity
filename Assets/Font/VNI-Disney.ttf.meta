@@ -1,0 +1,22 @@
+fileFormatVersion: 2
+guid: 939db19cb49d4d54489d602cf696b8c4
+timeCreated: 1493801378
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: VNI-Disney
+  fontNames:
+  - VNI-Disney
+  fallbackFontReferences:
+  - {fileID: 12800000, guid: 3ed5696f455a53c46b7634cd13aeb1cb, type: 3}
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

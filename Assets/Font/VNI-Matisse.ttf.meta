@@ -1,0 +1,23 @@
+fileFormatVersion: 2
+guid: f01c6145339eac64aa1aaa98004e1bf0
+timeCreated: 1493801379
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: VNI-Matisse
+  fontNames:
+  - VNI-Matisse
+  fallbackFontReferences:
+  - {fileID: 12800000, guid: 87a1e55d6584a3d4b8372ab84262766a, type: 3}
+  - {fileID: 12800000, guid: 6ddbcffdfa0382443959d60e853299a3, type: 3}
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

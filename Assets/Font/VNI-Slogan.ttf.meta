@@ -1,0 +1,22 @@
+fileFormatVersion: 2
+guid: 864575aa5f2f3c741b6f76aa48dffd85
+timeCreated: 1493801378
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: VNI-Slogan
+  fontNames:
+  - VNI-Slogan
+  fallbackFontReferences:
+  - {fileID: 12800000, guid: 7a3c056e26d1f6347bbafb54a3f91539, type: 3}
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

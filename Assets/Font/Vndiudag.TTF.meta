@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: 72e133aaae9b6e94b8d11f0d94741742
+timeCreated: 1493801377
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: VNI-Diudang
+  fontNames:
+  - VNI-Diudang
+  fallbackFontReferences: []
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

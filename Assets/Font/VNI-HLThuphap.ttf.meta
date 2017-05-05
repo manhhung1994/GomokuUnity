@@ -1,0 +1,23 @@
+fileFormatVersion: 2
+guid: 3ac1b190f84d59a42a5b9cf907f56730
+timeCreated: 1493801373
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: VNI-HLThuphap
+  fontNames:
+  - VNI-HLThuphap
+  fallbackFontReferences:
+  - {fileID: 12800000, guid: a447e7921bf42324d804ed43b176d70e, type: 3}
+  - {fileID: 12800000, guid: 03b0f9a5a0fdc054ba28849ccd806990, type: 3}
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

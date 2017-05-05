@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: 41e60d0495b8e214c90f65abaead8833
+timeCreated: 1493801373
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: VNI-Butlong
+  fontNames:
+  - VNI-Butlong
+  fallbackFontReferences: []
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

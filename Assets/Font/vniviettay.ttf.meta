@@ -1,0 +1,22 @@
+fileFormatVersion: 2
+guid: 4bedc693b0e6be44eb2e31f3bb43d87e
+timeCreated: 1493801373
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: VNI-Viettay
+  fontNames:
+  - VNI-Viettay
+  fallbackFontReferences:
+  - {fileID: 12800000, guid: 04d90197fdcfd7b47a29c1505c1b7bf8, type: 3}
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

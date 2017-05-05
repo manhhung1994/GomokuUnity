@@ -1,0 +1,22 @@
+fileFormatVersion: 2
+guid: f7e53959d45d6a8439e0885a615c575a
+timeCreated: 1493801379
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: VNI-Comicbook
+  fontNames:
+  - VNI-Comicbook
+  fallbackFontReferences:
+  - {fileID: 12800000, guid: d0ca18383addefd4ba6bebe31bd5a833, type: 3}
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

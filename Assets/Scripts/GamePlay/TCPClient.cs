@@ -13,15 +13,27 @@ using System.Collections.Generic;
 
 public class TCPClient: MonoBehaviour
 {
-    public enum state
+    public enum GameStatus
     {
         MYTURN,
-        WAITING,
+        ENEMY_TURN,
+        WAITING_PLAYER,
+        READY,
+        PLAYING,
+        WIN,
+        GAME_OVER,    
+        NULL,
+    };
+    public enum AccStatus
+    {
+        ON_GAMEROOMCHOOSE,
+        LOGIN,
+        ON_ROOM,
+        RECONNECT,
 
     };
-
-
-
+    public GameStatus GameState;
+    public AccStatus AccState;
     [SerializeField]
     String HostAddress;
     [SerializeField]
@@ -47,6 +59,7 @@ public class TCPClient: MonoBehaviour
     public Text inputTest;
     public Text inputHost;
     public Text inputPort;
+
     [Header("GAME_OBJECT")]
     public GameObject panelLogin;
     public GameObject panelChooseRoom;
@@ -54,7 +67,14 @@ public class TCPClient: MonoBehaviour
     public GameObject panelCaro;
     public GameObject panelConnect;
     public GameObject panelReconnect;
+    public GameObject areYouSure;
+    public GameObject panelWin;
     public GameObject txtConnecting;
+    public GameObject panelReady;
+    public GameObject playerLeft;
+    public GameObject playerRight;
+    public GameObject Stars;
+    
     [Header("CLIENT")]
 
     static ManualResetEvent _clientDone = new ManualResetEvent(false);
@@ -71,6 +91,7 @@ public class TCPClient: MonoBehaviour
     private bool isJoinRoom = false;
     public bool isRoot;
     public bool isMyTurn;
+    public bool isReady;
     public int room;
     UnitySynchronizeInvoke synchronizeInvoke;
     public IAsyncResult abc;
@@ -78,8 +99,12 @@ public class TCPClient: MonoBehaviour
 
     private void Start()
     {
-        SetupServer(HostAddress, PORT);
-
+        AccState = AccStatus.LOGIN;
+        GameState = GameStatus.NULL;
+        SaveHostAddress.Load();
+        //if(SaveHostAddress.hostAdd.Host!= "" && SaveHostAddress.hostAdd.PORT != null)
+        //SetupServer(SaveHostAddress.hostAdd.Host, SaveHostAddress.hostAdd.PORT);
+        SetupServer("127.0.0.1"  , 9696);
         {
             gameController = GetComponent<GameController>();
 
@@ -96,7 +121,7 @@ public class TCPClient: MonoBehaviour
     }
     void Update()
     {
-        if (Input.GetMouseButtonDown(0) && isJoinRoom == true)
+        if (Input.GetMouseButtonDown(0) && GameState == GameStatus.MYTURN )
         {           
             Interact();
         }
@@ -113,7 +138,7 @@ public class TCPClient: MonoBehaviour
     {
         try
         {
-            panelReconnect.SetActive(false);
+            //panelConnect.transform.SetAsLastSibling();
             txtConnecting.SetActive(true);
             _clientSocket.Connect(new IPEndPoint(IPAddress.Parse(hostAddr), port));
             
@@ -129,20 +154,62 @@ public class TCPClient: MonoBehaviour
     }
     private void Reconnect()
     {
+        AccState = AccStatus.RECONNECT;
         Debug.Log("CONNECT_FAILED");
-        panelReconnect.SetActive(true);
+        //panelReconnect.SetActive(true);
+        panelReconnect.transform.SetAsLastSibling();
         txtConnecting.SetActive(false);
     }
     public void onClick_Reconnect()
     {
         if (inputHost.text == "" || Int32.Parse(inputPort.text) == null)
-            SetupServer("127.0.0.1", 9696);
+            SetupServer(SaveHostAddress.hostAdd.Host, SaveHostAddress.hostAdd.PORT);
         else 
             SetupServer(inputHost.text, Int32.Parse(inputPort.text));
     }
-    public void onClick_Test()
+
+    public void onClick_Back()
     {
-        SendJson(newEventGame(EventType.ANY, inputTest.text));
+        caroBoard.SetActive(false);
+        areYouSure.transform.SetAsLastSibling();
+    }
+    public void onClickOKBack(bool ok)
+    {
+        if(ok)
+        {
+
+            if (AccState == AccStatus.LOGIN)
+            {
+                SendJson(newEventGame(EventType.DISCONNECT, ""));
+                _clientSocket.Close();
+                
+                //Application.Quit();
+            }
+           
+            if (AccState == AccStatus.ON_GAMEROOMCHOOSE)
+            {
+                panelLogin.transform.SetAsLastSibling();
+               
+                SendJson(newEventGame(EventType.DISCONNECT, ""));
+            }
+            if( 
+                (GameState == GameStatus.READY || 
+                GameState== GameStatus.ENEMY_TURN || 
+                GameState == GameStatus.MYTURN))
+            {
+                SendJson(newEventGame(EventType.GAME_ROOM_LEAVE, "lose"));
+            }
+            if(GameState == GameStatus.WAITING_PLAYER)
+            {
+                SendJson(newEventGame(EventType.GAME_ROOM_LEAVE, ""));
+            }
+        }
+        else
+        {
+            
+        }
+        areYouSure.transform.SetAsFirstSibling();
+
     }
     public void onClick_Room(int id)
     {
@@ -158,6 +225,17 @@ public class TCPClient: MonoBehaviour
     private void CheckLogin(string id, string pass)
     {
         Debug.Log(id + pass) ;
+    }
+    public void on_ClickReady()
+    {
+        /*
+        if(isRoot)
+            SendJson(newEventGame(EventType.READY, ""));
+        else
+            SendJson(newEventGame(EventType.READY, "player2"));
+          */  
+        panelReady.transform.SetAsFirstSibling();
+        panelReady.SetActive(false);
     }
     private void ReceiveCallback(IAsyncResult AR)
     {
@@ -198,10 +276,28 @@ public class TCPClient: MonoBehaviour
             case EventType.GAME_ROOM_JOIN_SUCCESS:
                 onJoinRoomSuccess(eve);
                 break;
+            case EventType.READY_SUCCESS:
+                onReadySuccess(eve);
+                break;
+            case EventType.ENEMYDATA:
+                onEnemydata(eve);
+                break;
+            case EventType.ENEMY_LEAVE:
+                onEnemyLeave(eve);
+                break;
+            case EventType.ROOM_LEAVE_SUCCESS:
+                onRoomLeaveSuccess(eve);
+                break;
+            case EventType.PLAYER2_READY:
+                onPlayer2Ready(eve);
+                break;
             case EventType.POSSITION:
                 onPossition(eve);
-
                 break;
+            case EventType.CHECKWIN:
+                onCheckWin(eve);
+                break;
+            
             default: break;
         }
        
@@ -209,23 +305,23 @@ public class TCPClient: MonoBehaviour
     private void onConnectSuccess(EventGame eve)
     {
         Debug.Log("onConnectSuccess");
+        AccState = AccStatus.LOGIN;
         var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
         {
-            panelLogin.SetActive(true);
-            panelConnect.SetActive(false);
+            //panelLogin.transform.SetAsLastSibling();
+            panelLogin.transform.SetAsLastSibling();
             isConnected = true;
             return this.gameObject.name;
-
+            
         }), null);
     }
     private void onLoginSuccess(EventGame eve)
     {
-
+        AccState = AccStatus.ON_GAMEROOMCHOOSE;
         Debug.Log("onLoginSuccess");
         var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
         {
-            panelLogin.SetActive(false);
-            panelChooseRoom.SetActive(true);
+            panelChooseRoom.transform.SetAsLastSibling();
             isConnected = true;
             return this.gameObject.name;
 
@@ -233,28 +329,38 @@ public class TCPClient: MonoBehaviour
     }
     private void onJoinRoomSuccess(EventGame eve)
     {
+        AccState = AccStatus.ON_ROOM;
+        GameState = GameStatus.WAITING_PLAYER;
         Debug.Log("onJoinRoomSuccess");
         var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
         {
-            panelLogin.SetActive(false);
-            panelChooseRoom.SetActive(false);
-            panelCaro.SetActive(true);
-            caroBoard.SetActive(true);
+            //panelCaro.transform.SetAsLastSibling();
+            panelCaro.transform.SetAsLastSibling();
+            caroBoard.SetActive(false);
+            panelReady.SetActive(true);
             isJoinRoom = true;
 
 
             string[] tokens = eve.data.Split(new[] { "-" }, StringSplitOptions.None);
-            room = Int32.Parse(tokens[0]);
+
             int flag = Int32.Parse(tokens[1]);
+
             if (flag == 1)
             {
+                playerLeft.transform.GetChild(0).GetComponent<Text>().text = tokens[0];
+                playerLeft.transform.GetChild(0).GetComponent<Text>().color = Color.green;
+                playerLeft.SetActive(true);
+                playerRight.SetActive(false);
                 currentPlayer = player1;
-                isMyTurn = true;
                 isRoot = true;
             }
             else {
+
+                playerRight.transform.GetChild(0).GetComponent<Text>().text = tokens[0];
+                playerRight.transform.GetChild(0).GetComponent<Text>().color = Color.green;
+                playerLeft.SetActive(true);
+                playerRight.SetActive(true);
                 currentPlayer = player2;
-                isMyTurn = false;
                 isRoot = false;
             }
             return this.gameObject.name;
@@ -262,25 +368,130 @@ public class TCPClient: MonoBehaviour
         }), null);
         
     }
+    private void onEnemydata(EventGame eve)
+    {
+        
+        Debug.Log("onEnemydata");
+        string[] tokens = eve.data.Split('-');
+        Debug.Log(tokens[0] + "|" + tokens[1]);
+        var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
+        {
+            if(isRoot)
+            {
+                playerRight.SetActive(true);
+                playerRight.transform.GetChild(0).gameObject.GetComponent<Text>().text = tokens[0];
+                playerRight.transform.GetChild(1).gameObject.GetComponent<Text>().text = tokens[1];
+            }
+            else
+            {
+                playerLeft.SetActive(true);
+                playerLeft.transform.GetChild(0).gameObject.GetComponent<Text>().text = tokens[0];
+                playerLeft.transform.GetChild(1).gameObject.GetComponent<Text>().text = tokens[1];
+            }
+            return this.gameObject.name;
+        }), null);
+
+    }
+    private void onRoomLeaveSuccess(EventGame eve)
+    {
+        Debug.Log("onRoomLeaveSuccess");
+        GameState = GameStatus.NULL;
+        AccState = AccStatus.ON_GAMEROOMCHOOSE;
+        var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
+        {
+            panelChooseRoom.transform.SetAsLastSibling();
+            
+            caroBoard.SetActive(false);
+            
+
+            return this.gameObject.name;
+        }), null);
+    }
+    private void onEnemyLeave(EventGame eve)
+    {
+        Debug.Log("onEnemyLeave");
+        if (isRoot)
+        {
+            playerRight.SetActive(false);
+        }
+        else
+            playerLeft.SetActive(false);
+    }
+    private void onReadySuccess(EventGame eve)
+    {
+        Debug.Log("onReadySuccess");
+        GameState = GameStatus.READY;
+
+        var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
+        {
+            panelReady.SetActive(false);
+            caroBoard.SetActive(true);
+            if(isRoot)
+                playerLeft.transform.GetChild(1).gameObject.SetActive(true);
+            else
+                playerRight.transform.GetChild(1).gameObject.SetActive(true);
+
+            return this.gameObject.name;
+        }), null);
+    }
+    private void onPlayer2Ready(EventGame eve)
+    {
+        GameState = GameStatus.MYTURN;
+        var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
+        {
+
+            playerRight.transform.GetChild(1).gameObject.SetActive(true);
+            return this.gameObject.name;
+        }), null);
+    }
     private void onPossition(EventGame eve)
     {
         string[] pos = eve.data.Split('-');
         int posX = Int32.Parse(pos[1]);
         int posY = Int32.Parse(pos[0]);
         Debug.Log(posX + "||" + posY);
-        isMyTurn = true;
+
+        GameState = GameStatus.MYTURN;
         var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
         {
-
             if (PlayerCanMark(posX, posY))
             {
                 if (currentPlayer == player1)
-                    Instantiate(player2, new Vector3(posX, posY, 0), Quaternion.identity);
+                      Instantiate(player2, new Vector3(posX, posY, 0), Quaternion.identity).transform.SetParent(caroBoard.transform);                    
                 else
-                    Instantiate(player1, new Vector3(posX, posY, 0), Quaternion.identity);
+                      Instantiate(player1, new Vector3(posX, posY, 0), Quaternion.identity).transform.SetParent(caroBoard.transform);
+                
             }
+           
             return this.gameObject.name;
         }), null);
+    }
+    private void onCheckWin(EventGame eve)
+    {
+        Debug.Log("onCheckWin");
+        var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
+        {
+            caroBoard.SetActive(false);
+            if (eve.data.Equals("true"))
+            {
+                Debug.Log("Ban da Win");
+                panelWin.SetActive(true);
+                
+                panelWin.transform.GetChild(1).gameObject.GetComponent<Text>().text = "Win";
+                GameState = GameStatus.WIN;
+            }
+            else
+            {
+                panelWin.SetActive(true);
+                panelWin.transform.GetChild(1).gameObject.GetComponent<Text>().text = "Lose";
+                Debug.Log("Ban da Lose");
+                Stars.SetActive(false);
+                GameState = GameStatus.GAME_OVER;
+            }
+
+            return this.gameObject.name;
+        }), null);
+        
     }
     public void SendJson(EventGame even)
     {
@@ -369,13 +580,14 @@ public class TCPClient: MonoBehaviour
         int row = Mathf.RoundToInt(mousePosition.y);
         int col = Mathf.RoundToInt(mousePosition.x);
 
-        if (PlayerCanMark(row, col) && isMyTurn == true)
+        if (PlayerCanMark(row, col) )
         {
             //Mark
             Vector3 position = new Vector3(Mathf.Round(mousePosition.x), Mathf.Round(mousePosition.y), 0);
-            Instantiate(currentPlayer, position, Quaternion.identity);
-            isMyTurn = false;
-            SendJson(newEventGame(EventType.POSSITION, row + "-" + col));
+            Instantiate(currentPlayer, position, Quaternion.identity).transform.SetParent(caroBoard.transform);
+            GameState = GameStatus.ENEMY_TURN;
+            //SendJson(newEventGame(EventType.POSSITION, row + "-" + col));
+            Debug.Log(row + "|" + col);
             // set flag 
             /*
             int markValue = currentPlayer == player1 ? 1 : 2;

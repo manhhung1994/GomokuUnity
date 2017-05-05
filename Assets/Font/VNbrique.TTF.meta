@@ -1,0 +1,23 @@
+fileFormatVersion: 2
+guid: 8a1b2966a118ad3468fc89ab98ecbf4a
+timeCreated: 1493801378
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: VNI-Briquet
+  fontNames:
+  - VNI-Briquet
+  fallbackFontReferences:
+  - {fileID: 12800000, guid: 07fbeb85da8e6a24b98111b4537595c6, type: 3}
+  - {fileID: 12800000, guid: 57ef9b1e1958a4f4790d97ac39acf58d, type: 3}
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
