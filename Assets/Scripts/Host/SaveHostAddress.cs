@@ -26,7 +26,7 @@ public class SaveHostAddress : MonoBehaviour {
             hostAdd.Host = host.text;
             hostAdd.PORT = int.Parse(port.text);
             BinaryFormatter bf = new BinaryFormatter();
-            FileStream file = File.Create(Application.persistentDataPath + "/ipPort.gd");
+            FileStream file = File.Create(Application.persistentDataPath + "/friend.gd");
             Debug.Log(Application.persistentDataPath);
             //datapath.text = Application.persistentDataPath;
             bf.Serialize(file, hostAdd);
@@ -36,11 +36,11 @@ public class SaveHostAddress : MonoBehaviour {
     }
     public static void Load()
     {
-        if (File.Exists(Application.persistentDataPath + "/ipPort.gd"))
+        if (File.Exists(Application.persistentDataPath + "/friend.gd"))
         {
             BinaryFormatter bf = new BinaryFormatter();
 
-            FileStream file = File.Open(Application.persistentDataPath + "/ipPort.gd", FileMode.Open);
+            FileStream file = File.Open(Application.persistentDataPath + "/friend.gd", FileMode.Open);
 
             hostAdd = (HostAddress)bf.Deserialize(file);
             file.Close();

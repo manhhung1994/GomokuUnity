@@ -30,13 +30,22 @@ public class TCPClient: MonoBehaviour
         LOGIN,
         ON_ROOM,
         RECONNECT,
+        ON_REGISTER,
 
     };
+    [Header("Game Status")]
     public GameStatus GameState;
     public AccStatus AccState;
     [SerializeField]
     String HostAddress;
     [SerializeField]
+
+    private bool isConnected = false;
+    private bool isJoinRoom = false;
+    public bool isRoot;
+    public bool isMyTurn;
+    public bool isReady;
+    public int room;
     int PORT;
 
     [Header("Game data")]
@@ -53,13 +62,19 @@ public class TCPClient: MonoBehaviour
 
     [Header("------GUI-------")]
     [Header("TEXT")]
-    public Text mess;
-    public Text inputId;
-    public Text inputPass;
-    public Text inputTest;
-    public Text inputHost;
-    public Text inputPort;
 
+    [Header("LOGIN")]
+    public Text login_inputId;
+    public Text login_inputPass;
+    public Text login_status;
+    [Header("RECONNECT")]
+    public Text recon_inputHost;
+    public Text recon_inputPort;
+    [Header("REGISTER")]
+    public Text regis_username;
+    public Text regis_Pass;
+    public Text regis_nickName;
+    public Text regis_status;
     [Header("GAME_OBJECT")]
     public GameObject panelLogin;
     public GameObject panelChooseRoom;
@@ -67,6 +82,7 @@ public class TCPClient: MonoBehaviour
     public GameObject panelCaro;
     public GameObject panelConnect;
     public GameObject panelReconnect;
+    public GameObject panelRegister;
     public GameObject areYouSure;
     public GameObject panelWin;
     public GameObject txtConnecting;
@@ -86,15 +102,8 @@ public class TCPClient: MonoBehaviour
 
     private EventGame ev;
     private byte[] reply;
-
-    private bool isConnected = false;
-    private bool isJoinRoom = false;
-    public bool isRoot;
-    public bool isMyTurn;
-    public bool isReady;
-    public int room;
     UnitySynchronizeInvoke synchronizeInvoke;
-    public IAsyncResult abc;
+    private IAsyncResult abc;
     
 
     private void Start()
@@ -162,12 +171,21 @@ public class TCPClient: MonoBehaviour
     }
     public void onClick_Reconnect()
     {
-        if (inputHost.text == "" || Int32.Parse(inputPort.text) == null)
+        if (recon_inputHost.text == "" || Int32.Parse(recon_inputPort.text) == null)
             SetupServer("127.0.0.1", 9696);
         else 
-            SetupServer(inputHost.text, Int32.Parse(inputPort.text));
+            SetupServer(recon_inputHost.text, Int32.Parse(recon_inputPort.text));
     }
-
+    public void onPopupRegister()
+    {
+        panelRegister.SetActive(true);
+        AccState = AccStatus.ON_REGISTER;
+    }
+    public void onClick_Register()
+    {
+        if(regis_username.text !="" && regis_Pass.text !="" && regis_nickName.text !="")
+        SendJson(newEventGame(EventType.REGISTER, regis_username.text +"-" + regis_Pass.text +"-" + regis_nickName.text));
+    }
     public void onClick_Back()
     {
         caroBoard.SetActive(false);
@@ -177,11 +195,15 @@ public class TCPClient: MonoBehaviour
     {
         if(ok)
         {
-
+            if(AccState == AccStatus.ON_REGISTER)
+            {
+                panelRegister.SetActive(false);
+                AccState = AccStatus.LOGIN;
+            }
             if (AccState == AccStatus.LOGIN)
             {
                 SendJson(newEventGame(EventType.DISCONNECT, ""));
-                _clientSocket.Close();
+                
                 
                 //Application.Quit();
             }
@@ -217,9 +239,9 @@ public class TCPClient: MonoBehaviour
     }
     public void onClick_Login()
     {
-        CheckLogin(inputId.text, inputPass.text);
-        
-        SendJson(newEventGame(EventType.LOG_IN, inputId.text + "-" + inputPass.text));
+
+        if (login_inputId.text != "" && login_inputPass.text != "")
+            SendJson(newEventGame(EventType.LOG_IN, login_inputId.text + "-" + login_inputPass.text));
         
     }
     private void CheckLogin(string id, string pass)
@@ -267,28 +289,37 @@ public class TCPClient: MonoBehaviour
         switch(eve.eventType)
         {
             case EventType.CONNECT_SUCCESS:
-                onConnectSuccess(eve);
+                onConnect_Success(eve);
                 break;
             case EventType.LOG_IN_SUCCESS:
-                onLoginSuccess(eve);
+                onLogin_Success(eve);
+                break;
+            case EventType.LOG_IN_FAILURE:
+                onLogin_Failure(eve);
+                break;
+            case EventType.REGISTER_SUCCESS:
+                onRegister_Success(eve);
+                break;
+            case EventType.REGISTER_FAILURE:
+                onRegister_Failure(eve);
                 break;
             case EventType.GAME_ROOM_JOIN_SUCCESS:
-                onJoinRoomSuccess(eve);
+                onJoinRoom_Success(eve);
                 break;
             case EventType.READY_SUCCESS:
-                onReadySuccess(eve);
+                onReady_Success(eve);
                 break;
             case EventType.ENEMY_JOIN_ROOM:
-                onEnemyJoinRoom(eve);
+                onEnemy_JoinRoom(eve);
                 break;
             case EventType.ENEMY_LEAVE:
-                onEnemyLeave(eve);
+                onEnemy_Leave(eve);
                 break;
             case EventType.ENEMYDATA:
-                onEnemyData(eve);
+                onEnemy_Data(eve);
                 break;
             case EventType.ROOM_LEAVE_SUCCESS:
-                onRoomLeaveSuccess(eve);
+                onRoomLeave_Success(eve);
                 break;
             case EventType.PLAYER2_READY:
                 onPlayer2Ready(eve);
@@ -304,7 +335,7 @@ public class TCPClient: MonoBehaviour
         }
        
     }
-    private void onConnectSuccess(EventGame eve)
+    private void onConnect_Success(EventGame eve)
     {
         Debug.Log("onConnectSuccess");
         AccState = AccStatus.LOGIN;
@@ -317,7 +348,26 @@ public class TCPClient: MonoBehaviour
             
         }), null);
     }
-    private void onLoginSuccess(EventGame eve)
+    private void onRegister_Success(EventGame eve)
+    {
+        var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
+        {
+            regis_status.text = "Register success";
+            return this.gameObject.name;
+
+        }), null);
+        
+    }
+    private void onRegister_Failure(EventGame eve)
+    {
+        var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
+        {
+            regis_status.text = "Register failure";
+            return this.gameObject.name;
+
+        }), null);
+    }
+    private void onLogin_Success(EventGame eve)
     {
         AccState = AccStatus.ON_GAMEROOMCHOOSE;
         Debug.Log("onLoginSuccess");
@@ -329,7 +379,19 @@ public class TCPClient: MonoBehaviour
 
         }), null);
     }
-    private void onJoinRoomSuccess(EventGame eve)
+    private void onLogin_Failure(EventGame eve)
+    {
+
+        Debug.Log("onLogin_Failure");
+        var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
+        {
+            login_status.text = "tài khoản đang sử dụng hoặc không chính xác";
+            return this.gameObject.name;
+
+        }), null);
+    }
+    
+    private void onJoinRoom_Success(EventGame eve)
     {
         AccState = AccStatus.ON_ROOM;
         GameState = GameStatus.WAITING_PLAYER;
@@ -390,7 +452,7 @@ public class TCPClient: MonoBehaviour
         
     }
    
-    private void onRoomLeaveSuccess(EventGame eve)
+    private void onRoomLeave_Success(EventGame eve)
     {
         Debug.Log("onRoomLeaveSuccess");
         GameState = GameStatus.NULL;
@@ -405,7 +467,7 @@ public class TCPClient: MonoBehaviour
             return this.gameObject.name;
         }), null);
     }
-    private void onEnemyJoinRoom(EventGame eve)
+    private void onEnemy_JoinRoom(EventGame eve)
     {
         
         Debug.Log("onEnemyJoinRoom");
@@ -425,7 +487,7 @@ public class TCPClient: MonoBehaviour
         }), null);
         
     }
-    private void onEnemyData(EventGame eve)
+    private void onEnemy_Data(EventGame eve)
     {
         Debug.Log("onEnemyData");
         if(eve.data.Equals("exitedEnemy"))
@@ -444,7 +506,7 @@ public class TCPClient: MonoBehaviour
             }), null);
         }
     }
-    private void onEnemyLeave(EventGame eve)
+    private void onEnemy_Leave(EventGame eve)
     {
 
         Debug.Log("onEnemyLeave" + eve.data);
@@ -464,7 +526,7 @@ public class TCPClient: MonoBehaviour
         }), null);
         
     }
-    private void onReadySuccess(EventGame eve)
+    private void onReady_Success(EventGame eve)
     {
         Debug.Log("onReadySuccess");
         GameState = GameStatus.READY;
@@ -592,17 +654,7 @@ public class TCPClient: MonoBehaviour
 
         return response;
     }
-    private void Log(string message, bool isOutgoing)
-    {
-        string direction = (isOutgoing) ? ">> " : "<< ";
-        mess.text += Environment.NewLine + direction + message;
-    }
-
-
-    private void ClearLog()
-    {
-        mess.text = String.Empty;
-    }
+   
 
     public EventGame newEventGame(int eventType,String data)
     {

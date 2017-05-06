@@ -42,6 +42,9 @@ public class EventType  {
     public const  byte PLAYER2_JOINROOM = 0x1c;
 
     public const  byte DISCONNECT = 0x1d;
+    public const  byte REGISTER = 0x20;
+    public const  byte REGISTER_SUCCESS = 0x21;
+    public const  byte REGISTER_FAILURE = 0x22;
 
 
 }
