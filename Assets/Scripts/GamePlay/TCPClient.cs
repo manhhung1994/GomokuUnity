@@ -45,24 +45,28 @@ public class TCPClient: MonoBehaviour
     public bool isRoot;
     public bool isMyTurn;
     public bool isReady;
+    public bool isEnemyReady;
     public int room;
     int PORT;
 
     [Header("Game data")]
     public GameObject player1;
     public GameObject player2;
+    public Sprite caro_X;
+    public Sprite caro_Y;
+    public Sprite caro_null;
     public Text winnerText;
     public int winCondition;
 
     public GameObject currentPlayer;
     GameController gameController;
-    int[][] flag;
+    public  int[][] flag;
     int maxRow;
     int maxCol;
 
     [Header("------GUI-------")]
     [Header("TEXT")]
-
+    public Text matrix;
     [Header("LOGIN")]
     public Text login_inputId;
     public Text login_inputPass;
@@ -90,7 +94,7 @@ public class TCPClient: MonoBehaviour
     public GameObject playerLeft;
     public GameObject playerRight;
     public GameObject Stars;
-    
+
     [Header("CLIENT")]
 
     static ManualResetEvent _clientDone = new ManualResetEvent(false);
@@ -130,10 +134,13 @@ public class TCPClient: MonoBehaviour
     }
     void Update()
     {
-        if (Input.GetMouseButtonDown(0) && GameState == GameStatus.MYTURN )
+        //
+        if (Input.GetMouseButtonDown(0)
+             && GameState == GameStatus.MYTURN)
         {           
             Interact();
         }
+       
         synchronizeInvoke.ProcessQueue();       
     }
     private void OnApplicationQuit()
@@ -189,12 +196,14 @@ public class TCPClient: MonoBehaviour
     public void onClick_Back()
     {
         caroBoard.SetActive(false);
+
         areYouSure.transform.SetAsLastSibling();
     }
     public void onClickOKBack(bool ok)
     {
         if(ok)
         {
+            
             if(AccState == AccStatus.ON_REGISTER)
             {
                 panelRegister.SetActive(false);
@@ -212,7 +221,8 @@ public class TCPClient: MonoBehaviour
             {
                 panelLogin.transform.SetAsLastSibling();
                
-                SendJson(newEventGame(EventType.DISCONNECT, ""));
+                SendJson(newEventGame(EventType.LOG_OUT, ""));
+                AccState = AccStatus.LOGIN;
             }
             if( 
                 (GameState == GameStatus.READY ||
@@ -258,6 +268,13 @@ public class TCPClient: MonoBehaviour
         }  
         
     }
+    public void on_ClickHome()
+    {
+        SendJson(newEventGame(EventType.GAME_ROOM_LEAVE, ""));
+
+        panelWin.SetActive(false);
+    }
+
     private void ReceiveCallback(IAsyncResult AR)
     {
         //Check how much bytes are recieved and call EndRecieve to finalize handshake
@@ -318,6 +335,9 @@ public class TCPClient: MonoBehaviour
             case EventType.ENEMYDATA:
                 onEnemy_Data(eve);
                 break;
+            case EventType.ENEMY_READY:
+                onEnemy_Ready(eve);
+                break;
             case EventType.ROOM_LEAVE_SUCCESS:
                 onRoomLeave_Success(eve);
                 break;
@@ -327,10 +347,12 @@ public class TCPClient: MonoBehaviour
             case EventType.POSSITION:
                 onPossition(eve);
                 break;
-            case EventType.CHECKWIN:
-                onCheckWin(eve);
+            case EventType.WIN:
+                on_Win(eve);
                 break;
-            
+            case EventType.GAME_OVER:
+                on_GameOver(eve);
+                break;            
             default: break;
         }
        
@@ -371,6 +393,7 @@ public class TCPClient: MonoBehaviour
     {
         AccState = AccStatus.ON_GAMEROOMCHOOSE;
         Debug.Log("onLoginSuccess");
+
         var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
         {
             panelChooseRoom.transform.SetAsLastSibling();
@@ -381,20 +404,44 @@ public class TCPClient: MonoBehaviour
     }
     private void onLogin_Failure(EventGame eve)
     {
-
+        
         Debug.Log("onLogin_Failure");
         var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
         {
-            login_status.text = "tài khoản đang sử dụng hoặc không chính xác";
+            if(eve.data.Equals("online"))
+                login_status.text = "Tài khoản đang được sử dụng ";
+            if (eve.data.Equals("notexit"))
+                login_status.text = "Tài khoản hoặc mật khẩu không đúng ";
             return this.gameObject.name;
 
         }), null);
     }
-    
+    public void resetCaroBoard()
+    {
+        Debug.Log("on reset caro");
+        for(int i=0;i<15;i++)
+        {
+            for(int j=0;j<15;j++)
+            {
+                flag[i][j] = 0;
+            }
+        }
+        var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
+        {
+            for (int i = 0; i < caroBoard.transform.childCount; i++)
+            {
+                caroBoard.transform.GetChild(i).gameObject.GetComponent<SpriteRenderer>().sprite = caro_null;
+            }
+            return this.gameObject.name;
+
+        }), null);
+       
+    }
     private void onJoinRoom_Success(EventGame eve)
     {
         AccState = AccStatus.ON_ROOM;
         GameState = GameStatus.WAITING_PLAYER;
+        //resetCaroBoard();
         Debug.Log("onJoinRoomSuccess");
         var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
         {
@@ -420,6 +467,7 @@ public class TCPClient: MonoBehaviour
                 if (tokens[2].Equals("exitedEnemy"))
                 {
                     playerRight.SetActive(true);
+                    playerRight.transform.GetChild(0).GetComponent<Text>().color = Color.red;
                     GameState = GameStatus.PLAYING;
                 }
                 else
@@ -438,6 +486,8 @@ public class TCPClient: MonoBehaviour
                 if (tokens[2].Equals("exitedEnemy"))
                 {
                     playerLeft.SetActive(true);
+                    playerLeft.transform.GetChild(0).GetComponent<Text>().color = Color.red;
+
                     GameState = GameStatus.PLAYING;
                 }
                 else
@@ -445,7 +495,11 @@ public class TCPClient: MonoBehaviour
                     Debug.Log("chua co enemy");
                 }
             }
-           
+
+        
+            
+
+
             return this.gameObject.name;
 
         }), null);
@@ -462,7 +516,7 @@ public class TCPClient: MonoBehaviour
             panelChooseRoom.transform.SetAsLastSibling();
             
             caroBoard.SetActive(false);
-            
+
 
             return this.gameObject.name;
         }), null);
@@ -470,17 +524,36 @@ public class TCPClient: MonoBehaviour
     private void onEnemy_JoinRoom(EventGame eve)
     {
         
-        Debug.Log("onEnemyJoinRoom");
-        
+        Debug.Log("onEnemyJoinRoom" + eve.data);
+
+        string[] tokens = eve.data.Split(new[] { "-" }, StringSplitOptions.None);
+
         var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
         {
+
             GameState = GameStatus.PLAYING;
             if(isRoot)
             {
+                playerRight.transform.GetChild(0).GetComponent<Text>().text = tokens[0];
+                playerRight.transform.GetChild(0).GetComponent<Text>().color = Color.red;
+                if(tokens[1].Equals("true"))
+                {
+                    playerRight.transform.GetChild(1).gameObject.SetActive(true);
+                }
+                else
+                    playerRight.transform.GetChild(1).gameObject.SetActive(false);
                 playerRight.SetActive(true);              
             }
             else
             {
+                playerLeft.transform.GetChild(0).GetComponent<Text>().text = tokens[0];
+                playerLeft.transform.GetChild(0).GetComponent<Text>().color = Color.red;
+                if (tokens[1].Equals("true"))
+                {
+                    playerLeft.transform.GetChild(1).gameObject.SetActive(true);
+                }
+                else
+                    playerLeft.transform.GetChild(1).gameObject.SetActive(false);
                 playerLeft.SetActive(true);               
             }
             return this.gameObject.name;
@@ -526,16 +599,47 @@ public class TCPClient: MonoBehaviour
         }), null);
         
     }
+    private void onEnemy_Ready(EventGame eve)
+    {
+        Debug.Log("onEnemy_Ready" + eve.data);
+        var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
+        {
+            isEnemyReady = true;
+            if (isRoot)
+            {
+                if(GameState == GameStatus.READY)
+                    GameState = GameStatus.MYTURN;
+                playerRight.transform.GetChild(1).gameObject.SetActive(true);
+            }
+            else
+            {
+                if (GameState == GameStatus.READY)
+                    GameState = GameStatus.ENEMY_TURN;
+                playerLeft.transform.GetChild(1).gameObject.SetActive(true);
+            }
+            
+            return this.gameObject.name;
+        }), null);
+    }
     private void onReady_Success(EventGame eve)
     {
         Debug.Log("onReadySuccess");
         GameState = GameStatus.READY;
-
+        if (isEnemyReady)
+        {
+            if (isRoot)
+                GameState = GameStatus.MYTURN;
+            else
+                GameState = GameStatus.ENEMY_TURN;
+        }
         var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
         {
             panelReady.SetActive(false);
             caroBoard.SetActive(true);
-            if(isRoot)
+ 
+            resetCaroBoard();
+
+            if (isRoot)
                 playerLeft.transform.GetChild(1).gameObject.SetActive(true);
             else
                 playerRight.transform.GetChild(1).gameObject.SetActive(true);
@@ -556,52 +660,56 @@ public class TCPClient: MonoBehaviour
     private void onPossition(EventGame eve)
     {
         string[] pos = eve.data.Split('-');
-        int posX = Int32.Parse(pos[1]);
-        int posY = Int32.Parse(pos[0]);
-        Debug.Log(posX + "||" + posY);
 
+        int row = Int32.Parse(pos[0]);
+        int col = Int32.Parse(pos[1]);
+        Debug.Log("nhan duoc  " + row + "-" + col);
+        flag[row][col] = 1;
         GameState = GameStatus.MYTURN;
         var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
         {
-            if (PlayerCanMark(posX, posY))
-            {
-                if (currentPlayer == player1)
-                      Instantiate(player2, new Vector3(posX, posY, 0), Quaternion.identity).transform.SetParent(caroBoard.transform);                    
-                else
-                      Instantiate(player1, new Vector3(posX, posY, 0), Quaternion.identity).transform.SetParent(caroBoard.transform);
-                
-            }
-           
+            if (isRoot)
+                caroBoard.transform.GetChild((row * 15) + col).GetComponent<SpriteRenderer>().sprite = caro_Y;
+            else
+                caroBoard.transform.GetChild((row * 15) + col).GetComponent<SpriteRenderer>().sprite = caro_X;           
             return this.gameObject.name;
         }), null);
     }
-    private void onCheckWin(EventGame eve)
+    private void on_Win(EventGame eve)
     {
-        Debug.Log("onCheckWin");
+
         var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
         {
             caroBoard.SetActive(false);
-            if (eve.data.Equals("true"))
-            {
-                Debug.Log("Ban da Win");
-                panelWin.SetActive(true);
-                
-                panelWin.transform.GetChild(1).gameObject.GetComponent<Text>().text = "Win";
-                GameState = GameStatus.WIN;
-            }
-            else
-            {
-                panelWin.SetActive(true);
-                panelWin.transform.GetChild(1).gameObject.GetComponent<Text>().text = "Lose";
-                Debug.Log("Ban da Lose");
-                Stars.SetActive(false);
-                GameState = GameStatus.GAME_OVER;
-            }
+
+            Debug.Log("Ban da Win");
+            panelWin.SetActive(true);
+            panelWin.transform.GetChild(1).gameObject.GetComponent<Text>().text = "Win";
+            GameState = GameStatus.WIN;
+            
+           
 
             return this.gameObject.name;
         }), null);
-        
     }
+    private void on_GameOver(EventGame eve)
+    {
+        Debug.Log("GameOver");
+        var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
+        {
+            caroBoard.SetActive(false);
+
+            panelWin.SetActive(true);
+            panelWin.transform.GetChild(1).gameObject.GetComponent<Text>().text = "Lose";
+            Debug.Log("Ban da Lose");
+            Stars.SetActive(false);
+            GameState = GameStatus.GAME_OVER;
+
+
+            return this.gameObject.name;
+        }), null);
+    }
+   
     public void SendJson(EventGame even)
     {
         Send(JsonUtility.ToJson(even));
@@ -673,26 +781,26 @@ public class TCPClient: MonoBehaviour
     void Interact()
     {
 
-        Vector2 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-
-        
+        Vector2 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);       
         int row = Mathf.RoundToInt(mousePosition.y);
         int col = Mathf.RoundToInt(mousePosition.x);
 
         if (PlayerCanMark(row, col) )
         {
-            //Mark
+
             Vector3 position = new Vector3(Mathf.Round(mousePosition.x), Mathf.Round(mousePosition.y), 0);
-            Instantiate(currentPlayer, position, Quaternion.identity).transform.SetParent(caroBoard.transform);
+            if(isRoot)
+                caroBoard.transform.GetChild((row * 15 )+ col).GetComponent<SpriteRenderer>().sprite = caro_X;
+            else
+                caroBoard.transform.GetChild((row * 15) + col).GetComponent<SpriteRenderer>().sprite = caro_Y;
             GameState = GameStatus.ENEMY_TURN;
-            //SendJson(newEventGame(EventType.POSSITION, row + "-" + col));
-            Debug.Log(row + "|" + col);
+           SendJson(newEventGame(EventType.POSSITION, row + "-" + col));
+            
             // set flag 
+            
+
+            flag[row][col] = 1;
             /*
-            int markValue = currentPlayer == player1 ? 1 : 2;
-
-            flag[row][col] = markValue;
-
             int winValue = CheckRow(markValue, row, col);
 
             CheckWinner(winValue, markValue);
@@ -709,8 +817,8 @@ public class TCPClient: MonoBehaviour
         }
         else
         {
-            Debug.Log(row);
-            Debug.Log(col);
+
+            Debug.Log("toa do khong dung");
         }
 
     }
@@ -718,10 +826,10 @@ public class TCPClient: MonoBehaviour
     bool PlayerCanMark(int currentRow, int currentCol)
     {
 
-        if (OutOfRange(currentRow, 0, maxRow - 1)) return false;
-        if (OutOfRange(currentCol, 0, maxCol - 1)) return false;
-
-        if (flag[currentRow][currentCol] != 0) return false;
+        Debug.Log("row " + currentRow + "col " + currentCol);
+        if (currentCol < 15 && currentRow < 15)
+            if (flag[currentRow][currentCol] != 0) return false;
+        if (currentCol >= 15 || currentRow >= 15) return false;
 
         return true;
     }

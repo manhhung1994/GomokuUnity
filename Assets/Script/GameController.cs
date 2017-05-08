@@ -12,10 +12,10 @@ public class GameController : MonoBehaviour {
 	void Start () {
 
 
-		for(int r = 0; r <maxRow ; r++){
+		for(int r = 0; r <maxCol ; r++){
 
-			for(int c = 0; c <maxCol ; c++){
-				GameObject squareClone = Instantiate(square,new Vector3(r,c,0),Quaternion.identity) as GameObject;
+			for(int c = 0; c <maxRow ; c++){
+				GameObject squareClone = Instantiate(square,new Vector3(c,r,0),Quaternion.identity) as GameObject;
                 //squareClone.transform.parent = transform;
                 squareClone.transform.parent = gameBoard;
 			} 

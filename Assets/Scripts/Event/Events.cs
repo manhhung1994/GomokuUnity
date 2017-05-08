@@ -45,6 +45,8 @@ public class EventType  {
     public const  byte REGISTER = 0x20;
     public const  byte REGISTER_SUCCESS = 0x21;
     public const  byte REGISTER_FAILURE = 0x22;
-
+    public const  byte ENEMY_READY = 0x23;
+    public const  byte GAME_OVER = 0x24;
+    public const  byte WIN = 0x25;
 
 }
