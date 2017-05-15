@@ -100,7 +100,7 @@ public class TCPClient: MonoBehaviour
     static ManualResetEvent _clientDone = new ManualResetEvent(false);
 
     private static Socket _clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-    private byte[] _recieveBuffer = new byte[8142];
+    private byte[] _recieveBuffer = new byte[99999];
 
     public readonly static Queue<Action> ExecuteOnMainThread = new Queue<Action>();
 
@@ -145,7 +145,7 @@ public class TCPClient: MonoBehaviour
     }
     private void OnApplicationQuit()
     {
-        SendJson(newEventGame(EventType.LOG_OUT, ""));
+        SendJson(newEventGame(EventType.DISCONNECT, ""));
         _clientSocket.Close();
     }
 
@@ -155,6 +155,7 @@ public class TCPClient: MonoBehaviour
         try
         {
             //panelConnect.transform.SetAsLastSibling();
+            _clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             txtConnecting.SetActive(true);
             _clientSocket.Connect(new IPEndPoint(IPAddress.Parse(hostAddr), port));
             
@@ -199,12 +200,12 @@ public class TCPClient: MonoBehaviour
 
         areYouSure.transform.SetAsLastSibling();
     }
-    public void onClickOKBack(bool ok)
+    public void onClick_OKBack(bool ok)
     {
-        if(ok)
+        if (ok)
         {
-            
-            if(AccState == AccStatus.ON_REGISTER)
+
+            if (AccState == AccStatus.ON_REGISTER)
             {
                 panelRegister.SetActive(false);
                 AccState = AccStatus.LOGIN;
@@ -212,33 +213,36 @@ public class TCPClient: MonoBehaviour
             if (AccState == AccStatus.LOGIN)
             {
                 SendJson(newEventGame(EventType.DISCONNECT, ""));
-                
-                
+
+
                 //Application.Quit();
             }
-           
+
             if (AccState == AccStatus.ON_GAMEROOMCHOOSE)
             {
                 panelLogin.transform.SetAsLastSibling();
-               
+
                 SendJson(newEventGame(EventType.LOG_OUT, ""));
                 AccState = AccStatus.LOGIN;
             }
-            if( 
+            if (
                 (GameState == GameStatus.READY ||
-                GameState == GameStatus.ENEMY_TURN || 
+                GameState == GameStatus.ENEMY_TURN ||
                 GameState == GameStatus.MYTURN))
             {
                 SendJson(newEventGame(EventType.GAME_ROOM_LEAVE, "lose"));
             }
-            if(GameState == GameStatus.WAITING_PLAYER || GameState == GameStatus.PLAYING )
+            if (GameState == GameStatus.WAITING_PLAYER || GameState == GameStatus.PLAYING)
             {
                 SendJson(newEventGame(EventType.GAME_ROOM_LEAVE, ""));
             }
         }
         else
         {
-            
+            if (GameState == GameStatus.ENEMY_TURN || GameState == GameStatus.MYTURN)
+            {
+                caroBoard.SetActive(true);
+            }
         }
         areYouSure.transform.SetAsFirstSibling();
 
@@ -258,7 +262,7 @@ public class TCPClient: MonoBehaviour
     {
         Debug.Log(id + pass) ;
     }
-    public void on_ClickReady()
+    public void onClick_Ready()
     {
         if (GameState == GameStatus.PLAYING)
         {
@@ -268,13 +272,17 @@ public class TCPClient: MonoBehaviour
         }  
         
     }
-    public void on_ClickHome()
+    public void onClick_Home()
     {
         SendJson(newEventGame(EventType.GAME_ROOM_LEAVE, ""));
 
         panelWin.SetActive(false);
     }
-
+    public void onClick_Replay()
+    {
+        SendJson(newEventGame(EventType.REPLAY, ""));
+        panelWin.SetActive(false);
+    }
     private void ReceiveCallback(IAsyncResult AR)
     {
         //Check how much bytes are recieved and call EndRecieve to finalize handshake
@@ -342,7 +350,7 @@ public class TCPClient: MonoBehaviour
                 onRoomLeave_Success(eve);
                 break;
             case EventType.PLAYER2_READY:
-                onPlayer2Ready(eve);
+                //onPlayer2Ready(eve);
                 break;
             case EventType.POSSITION:
                 onPossition(eve);
@@ -352,7 +360,10 @@ public class TCPClient: MonoBehaviour
                 break;
             case EventType.GAME_OVER:
                 on_GameOver(eve);
-                break;            
+                break;
+            case EventType.REPLAY_SUCCESS:
+                on_ReplaySuccess(eve);
+                break;
             default: break;
         }
        
@@ -448,6 +459,7 @@ public class TCPClient: MonoBehaviour
             //panelCaro.transform.SetAsLastSibling();
             panelCaro.transform.SetAsLastSibling();
             caroBoard.SetActive(false);
+            panelWin.SetActive(false);
             panelReady.SetActive(true);
             isJoinRoom = true;
 
@@ -607,14 +619,22 @@ public class TCPClient: MonoBehaviour
             isEnemyReady = true;
             if (isRoot)
             {
-                if(GameState == GameStatus.READY)
+                if (GameState == GameStatus.READY)
+                {
                     GameState = GameStatus.MYTURN;
+                    playerLeft.transform.GetChild(2).gameObject.SetActive(true);
+                    playerRight.transform.GetChild(2).gameObject.SetActive(false);
+                }
                 playerRight.transform.GetChild(1).gameObject.SetActive(true);
             }
             else
             {
                 if (GameState == GameStatus.READY)
+                {
                     GameState = GameStatus.ENEMY_TURN;
+                    playerLeft.transform.GetChild(2).gameObject.SetActive(true);
+                    playerRight.transform.GetChild(2).gameObject.SetActive(false);
+                }
                 playerLeft.transform.GetChild(1).gameObject.SetActive(true);
             }
             
@@ -628,15 +648,22 @@ public class TCPClient: MonoBehaviour
         if (isEnemyReady)
         {
             if (isRoot)
+            {
                 GameState = GameStatus.MYTURN;
+
+            }
             else
+            {
                 GameState = GameStatus.ENEMY_TURN;
+
+            }
+            
         }
         var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
         {
             panelReady.SetActive(false);
             caroBoard.SetActive(true);
- 
+
             resetCaroBoard();
 
             if (isRoot)
@@ -647,6 +674,7 @@ public class TCPClient: MonoBehaviour
             return this.gameObject.name;
         }), null);
     }
+    /*
     private void onPlayer2Ready(EventGame eve)
     {
         GameState = GameStatus.MYTURN;
@@ -656,22 +684,38 @@ public class TCPClient: MonoBehaviour
             playerRight.transform.GetChild(1).gameObject.SetActive(true);
             return this.gameObject.name;
         }), null);
-    }
+    }*/
     private void onPossition(EventGame eve)
     {
         string[] pos = eve.data.Split('-');
 
         int row = Int32.Parse(pos[0]);
         int col = Int32.Parse(pos[1]);
-        Debug.Log("nhan duoc  " + row + "-" + col);
+        bool isGameOver = bool.Parse( pos[2]);
+        Debug.Log("nhan duoc  " + row + "-" + col + "-" + isGameOver);
+        
         flag[row][col] = 1;
         GameState = GameStatus.MYTURN;
+
         var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
         {
             if (isRoot)
+            {
                 caroBoard.transform.GetChild((row * 15) + col).GetComponent<SpriteRenderer>().sprite = caro_Y;
+                playerLeft.transform.GetChild(2).gameObject.SetActive(true);
+                playerRight.transform.GetChild(2).gameObject.SetActive(false);
+            }
             else
-                caroBoard.transform.GetChild((row * 15) + col).GetComponent<SpriteRenderer>().sprite = caro_X;           
+            {
+                caroBoard.transform.GetChild((row * 15) + col).GetComponent<SpriteRenderer>().sprite = caro_X;
+                playerLeft.transform.GetChild(2).gameObject.SetActive(false);
+                playerRight.transform.GetChild(2).gameObject.SetActive(true);
+            }
+
+            if(isGameOver)
+            {
+                on_GameOver(eve);
+            }
             return this.gameObject.name;
         }), null);
     }
@@ -709,10 +753,30 @@ public class TCPClient: MonoBehaviour
             return this.gameObject.name;
         }), null);
     }
-   
+    public void on_ReplaySuccess(EventGame eve)
+    {
+        Debug.Log("on_ReplaySuccess");
+        var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
+        {
+            resetCaroBoard();
+            panelReady.SetActive(true);
+            caroBoard.SetActive(false);
+            GameState = GameStatus.PLAYING;
+
+
+            return this.gameObject.name;
+        }), null);
+    }
     public void SendJson(EventGame even)
     {
-        Send(JsonUtility.ToJson(even));
+        string result = Send(JsonUtility.ToJson(even));
+        Debug.Log(result);
+        if(result.Equals( "Operation Timeout"))
+        {
+            _clientSocket.Close();
+            panelReconnect.transform.SetAsLastSibling();
+           
+        }
     }
     private void SendData(byte[] data)
     {
@@ -725,12 +789,13 @@ public class TCPClient: MonoBehaviour
     public static string Send(string data)
     {
         string response = "Operation Timeout";
-
+        
+        
         if (_clientSocket != null)
         {
             SocketAsyncEventArgs socketEventArg = new SocketAsyncEventArgs();
 
-            socketEventArg.RemoteEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"),8080);
+            socketEventArg.RemoteEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"),9696);
             socketEventArg.UserToken = null;
 
             socketEventArg.Completed += new EventHandler<SocketAsyncEventArgs>(delegate (object s, SocketAsyncEventArgs e)
@@ -758,6 +823,7 @@ public class TCPClient: MonoBehaviour
         else
         {
             response = "Socket is not initialized";
+            Debug.Log("Socket is not initialized");
         }
 
         return response;
@@ -796,24 +862,20 @@ public class TCPClient: MonoBehaviour
             GameState = GameStatus.ENEMY_TURN;
            SendJson(newEventGame(EventType.POSSITION, row + "-" + col));
             
+            if(isRoot)
+            {
+                playerRight.transform.GetChild(2).gameObject.SetActive(true);
+                playerLeft.transform.GetChild(2).gameObject.SetActive(false);
+            }
+            else
+            {
+                playerRight.transform.GetChild(2).gameObject.SetActive(false);
+                playerLeft.transform.GetChild(2).gameObject.SetActive(true);
+            }
             // set flag 
             
-
             flag[row][col] = 1;
-            /*
-            int winValue = CheckRow(markValue, row, col);
-
-            CheckWinner(winValue, markValue);
-
-            winValue = CheckColumn(markValue, row, col);
-            CheckWinner(winValue, markValue);
-
-            winValue = CheckLeftDiagonal(markValue, row, col);
-            CheckWinner(winValue, markValue);
-
-            winValue = CheckRightDiagonal(markValue, row, col);
-            CheckWinner(winValue, markValue);
-            */
+            
         }
         else
         {
@@ -834,213 +896,8 @@ public class TCPClient: MonoBehaviour
         return true;
     }
 
-    bool OutOfRange(int value, int min, int max)
-    {
+  
 
-        return (value < min) || (value > max);
-    }
-
-    bool CheckWinner(int value, int player)
-    {
-
-        if (value >= winCondition)
-        {
-            String message = "Player " + player.ToString() + " win!!!!";
-            DisplayMessage(message);
-            return true;
-        }
-        return false;
-    }
-
-    void DisplayMessage(String message)
-    {
-        winnerText.text = message;
-        winnerText.enabled = true;
-    }
-    int CheckRow(int checkValue, int row, int col)
-    {
-
-        int count = 1;
-        int stepTry = winCondition - 1;
-        int limit = maxCol - 1;
-
-        //determine number of square that can be checked
-        int numberOfStep = CalculatePossibeSteps(col, stepTry, limit);
-        //check square on the right
-        Step step = new Step(0, 1, numberOfStep);
-        count += NumberOfMatch(row, col, step, checkValue);
-
-        stepTry = -(winCondition - 1);
-        limit = 0;
-        //determine number of square that can be checked
-        numberOfStep = CalculatePossibeSteps(col, stepTry, limit);
-        //check square on the left
-        step.UpdateValues(0, -1, numberOfStep);
-
-        count += NumberOfMatch(row, col, step, checkValue);
-        return count;
-
-
-    }
-
-    int CheckColumn(int checkValue, int row, int col)
-    {
-
-        int count = 1;
-        int stepTry = winCondition - 1;
-        int limit = maxRow - 1;
-
-        //determine number of square that can be checked
-        int numberOfStep = CalculatePossibeSteps(row, stepTry, limit);
-        //check square on below
-        Step step = new Step(1, 0, numberOfStep);
-
-        count += NumberOfMatch(row, col, step, checkValue);
-
-        stepTry = -(winCondition - 1);
-        limit = 0;
-        //determine number of square that can be checked
-        numberOfStep = CalculatePossibeSteps(row, stepTry, limit);
-
-        //check square on the left
-        step.UpdateValues(-1, 0, numberOfStep);
-
-        count += NumberOfMatch(row, col, step, checkValue);
-        return count;
-
-
-    }
-
-    int CheckLeftDiagonal(int checkValue, int row, int col)
-    {
-
-        int count = 1;
-        int stepTry = winCondition - 1;
-        int limit = maxRow - 1;
-
-        //determine number of square that can be checked
-        int numberOfStep = CalculatePossibeSteps(row, stepTry, limit);
-
-        limit = maxCol - 1;
-        int tmp = CalculatePossibeSteps(col, stepTry, limit);
-        numberOfStep = numberOfStep < tmp ? numberOfStep : tmp;
-
-        //check square on down right
-        Step step = new Step(1, 1, numberOfStep);
-
-        count += NumberOfMatch(row, col, step, checkValue);
-
-        stepTry = -(winCondition - 1);
-        limit = 0;
-        //determine number of square that can be checked
-        numberOfStep = CalculatePossibeSteps(row, stepTry, limit);
-
-        limit = 0;
-        tmp = CalculatePossibeSteps(col, stepTry, limit);
-        numberOfStep = numberOfStep < tmp ? numberOfStep : tmp;
-
-        //check square on the up right
-        step.UpdateValues(-1, -1, numberOfStep);
-
-        count += NumberOfMatch(row, col, step, checkValue);
-        return count;
-    }
-
-    int CheckRightDiagonal(int checkValue, int row, int col)
-    {
-
-        int count = 1;
-        int stepTry = -(winCondition - 1);
-        int limit = 0;
-
-        //determine number of square that can be checked
-        int numberOfStep = CalculatePossibeSteps(row, stepTry, limit);
-
-        stepTry = winCondition - 1;
-        limit = maxCol - 1;
-        int tmp = CalculatePossibeSteps(col, stepTry, limit);
-        numberOfStep = numberOfStep < tmp ? numberOfStep : tmp;
-
-        //check square on up right
-        Step step = new Step(-1, 1, numberOfStep);
-
-        count += NumberOfMatch(row, col, step, checkValue);
-
-        stepTry = winCondition - 1;
-        limit = maxRow - 1;
-        //determine number of square that can be checked
-        numberOfStep = CalculatePossibeSteps(row, stepTry, limit);
-
-        stepTry = -(winCondition - 1);
-        limit = 0;
-        tmp = CalculatePossibeSteps(col, stepTry, limit);
-        numberOfStep = numberOfStep < tmp ? numberOfStep : tmp;
-
-        //check square on the down left
-        step.UpdateValues(1, -1, numberOfStep);
-
-        count += NumberOfMatch(row, col, step, checkValue);
-        return count;
-    }
-
-    int NumberOfMatch(int row, int col, Step step, int checkValue)
-    {
-
-        int rStep = step.rowStep;
-        int cStep = step.colStep;
-        int maxStep = step.maxStep;
-
-        int count = 0;
-
-        for (int i = 1; i <= maxStep; ++i)
-        {
-
-            int value = flag[row + i * rStep][col + i * cStep];
-
-            if (value != checkValue) return count;
-
-            ++count;
-        }
-
-        return count;
-    }
-    int CalculatePossibeSteps(int initial, int steps, int limit)
-    {
-
-        int result = Mathf.Abs(steps);
-        // upper limit
-        if (steps > 0)
-        {
-
-            if (initial + steps > limit)
-            {
-                result = limit - initial;
-            }
-        }
-        else
-        {
-            if (initial + steps < limit)
-            {
-                result = initial - limit;
-            }
-        }
-
-        return result;
-    }
-
-    int CheckRange(int value, int min, int max)
-    {
-
-        if (value > max)
-        {
-            value = max;
-        }
-        else if (value < min)
-        {
-            value = min;
-        }
-
-        return value;
-    }
+    
 }
 #endregion
