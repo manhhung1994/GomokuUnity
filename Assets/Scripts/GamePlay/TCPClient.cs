@@ -69,7 +69,8 @@ public class TCPClient: MonoBehaviour
     public Text matrix;
     [Header("LOGIN")]
     public Text login_inputId;
-    public Text login_inputPass;
+
+    public InputField login_inputPass;
     public Text login_status;
     [Header("RECONNECT")]
     public Text recon_inputHost;
@@ -186,7 +187,10 @@ public class TCPClient: MonoBehaviour
     }
     public void onPopupRegister()
     {
+       
         panelRegister.SetActive(true);
+        
+
         AccState = AccStatus.ON_REGISTER;
     }
     public void onClick_Register()
@@ -253,7 +257,7 @@ public class TCPClient: MonoBehaviour
     }
     public void onClick_Login()
     {
-
+        
         if (login_inputId.text != "" && login_inputPass.text != "")
             SendJson(newEventGame(EventType.LOG_IN, login_inputId.text + "-" + login_inputPass.text));
         
@@ -395,7 +399,7 @@ public class TCPClient: MonoBehaviour
     {
         var retObj = synchronizeInvoke.Invoke((System.Func<string>)(() =>
         {
-            regis_status.text = "Register failure";
+            regis_status.text = "Tài khoản đã tồn tại";
             return this.gameObject.name;
 
         }), null);
